@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rover Recruitment Test</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: #111;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.card {
+  background: white;
+  padding: 35px;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.header img {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 50%;
+  margin-bottom: 10px;
+}
+
+.header h1 {
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.divider {
+  height: 4px;
+  width: 60px;
+  background: #ff7a00;
+  margin: 12px auto;
+  border-radius: 5px;
+}
+
+label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+input {
+  width: 100%;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  outline: none;
+  transition: 0.3s;
+}
+
+input:focus {
+  border-color: #ff7a00;
+  box-shadow: 0 0 0 3px rgba(255,122,0,0.2);
+}
+
+button {
+  width: 100%;
+  padding: 14px;
+  background: #ff7a00;
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-weight: 700;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  filter: brightness(110%);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.error {
+  background: rgba(220,38,38,0.1);
+  color: #dc2626;
+  padding: 10px;
+  text-align: center;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.success {
+  background: rgba(16,185,129,0.1);
+  color: #10b981;
+  padding: 10px;
+  text-align: center;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: #777;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="card">
+    
+    <div class="header">
+      <img src="logo.png" alt="Ad Astra Logo">
+      <h1>Rover Recruitment Test</h1>
+      <div class="divider"></div>
+    </div>
+
+    <form id="loginForm">
+      
+      <label>Full Name</label>
+      <input type="text" id="fullName" placeholder="Enter your full name">
+
+      <label>Register Number</label>
+      <input type="text" id="registerNumber" placeholder="e.g. 2024XXXX">
+
+      <label>Password</label>
+      <input type="password" id="password" placeholder="••••••••">
+
+      <div id="errorBox"></div>
+
+      <button type="submit" id="submitBtn">Start Exam</button>
+    </form>
+
+    <div class="footer">
+      Authorized Candidates Only
+    </div>
+    <div style="text-align:center; font-size:12px; margin-top:10px; color:#999;">
+      Desktop / Laptop access only
+    </div>
+
+  </div>
+</div>
+
+<script>
+
+
+// 🚫 Block Mobile Devices
+if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    document.body.innerHTML = `
+        <div style="
+            background:#111;
+            color:white;
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+            font-family:Inter,sans-serif;
+            padding:20px;
+        ">
+            <div>
+                <h2 style="color:#ff7a00;">Device Not Supported</h2>
+                <p style="margin-top:15px;">
+                    This exam must be attended using a laptop or desktop computer.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+const form = document.getElementById("loginForm");
+const errorBox = document.getElementById("errorBox");
+const submitBtn = document.getElementById("submitBtn");
+
+form.addEventListener("submit", async function(e) {
+  e.preventDefault();
+
+  const fullName = document.getElementById("fullName").value.trim();
+  const registerNumber = document.getElementById("registerNumber").value.trim();
+  const password = document.getElementById("password").value.trim();
+
+  errorBox.innerHTML = "";
+
+  if (!fullName) return showError("Full Name is required.");
+  if (!registerNumber) return showError("Register Number is required.");
+  if (!password) return showError("Password is required.");
+
+  submitBtn.disabled = true;
+  showMessage("Verifying credentials...", "success");
+
+  try {
+    const response = await fetch("https://adastra-proctor-1.onrender.com/start-exam", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: fullName,
+        registerNumber: registerNumber,
+        password: password
+      })
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.candidateId) {
+      localStorage.setItem("candidateId", data.candidateId);
+      window.location.href = "exam.html";
+    } else {
+      showError(data.message || "Login failed.");
+      submitBtn.disabled = false;
+    }
+
+  } catch (error) {
+    showError("Unable to connect to server.");
+    submitBtn.disabled = false;
+  }
+});
+
+function showError(message) {
+  errorBox.innerHTML = '<div class="error">' + message + '</div>';
+}
+
+function showMessage(message, type) {
+  errorBox.innerHTML = '<div class="' + type + '">' + message + '</div>';
+}
+</script>
+
+</body>
+</html>

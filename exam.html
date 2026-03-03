@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Rover Recruitment Exam</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
+
+body {
+  background-color: #111;
+  color: #111;
+  min-height: 100vh;
+}
+
+.header {
+  background: #111;
+  color: white;
+  padding: 18px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h5 {
+  font-weight: 800;
+  letter-spacing: 2px;
+}
+
+.timer {
+  color: #ff7a00;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 20px;
+}
+
+.card {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+
+
+#questionText {
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.7;
+  color: #222;
+}
+
+#questionNumber {
+  font-size: 19px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+
+button {
+  padding: 12px 22px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-orange {
+  background: #ff7a00;
+  color: white;
+}
+
+.btn-orange:hover {
+  filter: brightness(110%);
+}
+
+.btn-secondary {
+  background: #333;
+  color: white;
+}
+
+.option-item {
+  margin-bottom: 15px;
+}
+
+input[type="radio"] {
+  margin-right: 8px;
+}
+
+.message-box {
+  background: rgba(220,38,38,0.1);
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.center-screen {
+  text-align: center;
+  margin-top: 80px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h5>ROVER RECRUITMENT EXAM</h5>
+    <div class="timer" id="timer">40:00</div>
+</div>
+
+<div class="container">
+
+    <!-- Start Screen -->
+    <div id="startScreen" class="center-screen">
+        <h3>Click below to begin the exam</h3>
+        <button class="btn-orange" onclick="beginExam()">Begin Exam</button>
+    </div>
+
+    <!-- Resume Screen -->
+    <div id="resumeScreen" class="center-screen" style="display:none;">
+        <h3>Fullscreen was exited</h3>
+        <p>Click below to continue exam</p>
+        <button class="btn-orange" onclick="resumeExam()">Resume Exam</button>
+    </div>
+
+    <!-- Exam Content -->
+    <div id="examContent" style="display:none;">
+        <div class="card">
+
+            <div id="messageBox" class="message-box"></div>
+
+            <h4 id="questionNumber"></h4>
+            <p id="questionText" style="margin:20px 0;"></p>
+
+            <div id="optionsBox"></div>
+
+            <div style="margin-top:30px; text-align:right;">
+                <button id="nextBtn" class="btn-secondary" onclick="nextQuestion()">Next</button>
+                <button id="submitBtn" class="btn-orange" onclick="submitExam()" style="display:none;">Submit</button>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+
+// 🚫 Block Mobile Devices
+if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+    document.body.innerHTML = `
+        <div style="
+            background:#111;
+            color:white;
+            height:100vh;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+            font-family:Inter,sans-serif;
+            padding:20px;
+        ">
+            <div>
+                <h2 style="color:#ff7a00;">Device Not Supported</h2>
+                <p style="margin-top:15px;">
+                    Please use a laptop or desktop to attend this exam.
+                </p>
+            </div>
+        </div>
+    `;
+}
+
+// Redirect if no candidateId
+let candidateId = localStorage.getItem("candidateId");
+if (!candidateId) {
+    window.location.href = "index.html";
+}
+
+// Disable back
+history.pushState(null, null, location.href);
+window.onpopstate = function () { history.go(1); };
+
+// Refresh warning
+window.onbeforeunload = function () {
+    return "Refreshing or leaving will submit your exam.";
+};
+
+let questions = [];
+let currentIndex = parseInt(localStorage.getItem("currentIndex")) || 0;
+let answers = JSON.parse(localStorage.getItem("answers")) || [];
+let timeLeft = parseInt(localStorage.getItem("timeLeft")) || (40 * 60);
+
+let timerInterval = setInterval(() => {
+    timeLeft--;
+    localStorage.setItem("timeLeft", timeLeft);
+
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+
+    document.getElementById("timer").innerText =
+        minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+
+    if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        submitExam();
+    }
+}, 1000);
+
+// Begin Exam (Fullscreen)
+function beginExam() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+
+    document.getElementById("startScreen").style.display = "none";
+    document.getElementById("examContent").style.display = "block";
+}
+
+// Fullscreen Violations
+let fullscreenExits = 0;
+
+document.addEventListener("fullscreenchange", function () {
+
+    if (!document.fullscreenElement) {
+
+        fullscreenExits++;
+
+        fetch("https://adastra-proctor-1.onrender.com/fullscreen-violation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ candidateId })
+        });
+
+        if (fullscreenExits >= 3) {
+            showMessage("Multiple fullscreen violations. Exam auto-submitting.");
+            submitExam();
+        } else {
+            showMessage("Fullscreen exited. Please resume exam.");
+            showResumeScreen();
+        }
+    }
+});
+
+// Tab Violations
+let tabViolations = 0;
+
+document.addEventListener("visibilitychange", function () {
+
+    if (document.visibilityState === "hidden") {
+
+        tabViolations++;
+
+        fetch("https://adastra-proctor-1.onrender.com/tab-violation", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ candidateId })
+        });
+
+        if (tabViolations >= 3) {
+            showMessage("Multiple tab switches detected. Exam auto-submitting.");
+            submitExam();
+        } else {
+            showMessage("Tab switch detected.");
+        }
+    }
+});
+
+function showResumeScreen() {
+    document.getElementById("examContent").style.display = "none";
+    document.getElementById("resumeScreen").style.display = "block";
+}
+
+function resumeExam() {
+    const elem = document.documentElement;
+    if (elem.requestFullscreen) elem.requestFullscreen();
+
+    document.getElementById("resumeScreen").style.display = "none";
+    document.getElementById("examContent").style.display = "block";
+}
+
+function showMessage(msg) {
+    const box = document.getElementById("messageBox");
+    box.innerText = msg;
+    box.style.display = "block";
+
+    // Auto hide after 3 seconds (except critical)
+    if (!msg.toLowerCase().includes("auto-submitting")) {
+        setTimeout(() => {
+            hideMessage();
+        }, 3000);
+    }
+}
+
+function hideMessage() {
+    const box = document.getElementById("messageBox");
+    box.style.display = "none";
+}
+
+// Fetch Questions
+fetch("https://adastra-proctor-1.onrender.com/get-questions")
+.then(res => res.json())
+.then(data => {
+    questions = data;
+    if (currentIndex < questions.length) showQuestion();
+});
+
+function showQuestion() {
+    let q = questions[currentIndex];
+
+    document.getElementById("questionNumber").innerText =
+        "Question " + (currentIndex + 1) + " of " + questions.length;
+
+    document.getElementById("questionText").innerText = q.questionText;
+
+    let optionsHTML = "";
+
+    q.options.forEach((opt, index) => {
+        optionsHTML += `
+            <div class="option-item">
+                <label>
+                    <input type="radio" name="option" value="${index}">
+                    ${opt}
+                </label>
+            </div>
+        `;
+    });
+
+    document.getElementById("optionsBox").innerHTML = optionsHTML;
+    
+    // Remove message when option selected
+    document.querySelectorAll('input[name="option"]').forEach(input => {
+    input.addEventListener("change", function() {
+        hideMessage();
+       });
+    });
+
+    if (currentIndex === questions.length - 1) {
+        nextBtn.style.display = "none";
+        submitBtn.style.display = "inline-block";
+    } else {
+        nextBtn.style.display = "inline-block";
+        submitBtn.style.display = "none";
+    }
+}
+
+function nextQuestion() {
+    let selected = document.querySelector('input[name="option"]:checked');
+
+    if (!selected) {
+        showMessage("Please select an option.");
+        return;
+    }
+
+    answers.push({
+        questionId: questions[currentIndex]._id,
+        selectedOption: parseInt(selected.value)
+    });
+
+    currentIndex++;
+
+    localStorage.setItem("answers", JSON.stringify(answers));
+    localStorage.setItem("currentIndex", currentIndex);
+    localStorage.setItem("timeLeft", timeLeft);
+
+    if (currentIndex < questions.length) showQuestion();
+}
+
+function submitExam() {
+
+    let selected = document.querySelector('input[name="option"]:checked');
+    if (selected && answers.length < questions.length) {
+        answers.push({
+            questionId: questions[currentIndex]._id,
+            selectedOption: parseInt(selected.value)
+        });
+    }
+
+    window.onbeforeunload = null;
+
+    fetch("https://adastra-proctor-1.onrender.com/submit-exam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ candidateId, answers })
+    })
+    .then(res => res.json())
+    .then(data => {
+        localStorage.clear();
+        window.location.href = "index.html";
+    });
+}
+
+</script>
+
+</body>
+</html>

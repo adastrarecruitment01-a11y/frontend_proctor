@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-light">
+
+<div class="container mt-5" id="loginSection">
+    <h3>Admin Login</h3>
+
+    <input type="text" id="username" class="form-control mb-2" placeholder="Username">
+    <input type="password" id="password" class="form-control mb-2" placeholder="Password">
+
+    <button class="btn btn-dark" onclick="adminLogin()">Login</button>
+</div>
+
+<div class="container mt-5" id="resultSection" style="display:none;">
+    <h3>Exam Results</h3>
+
+    <table class="table table-bordered">
+        <thead class="table-dark">
+            <tr>
+                <th>Name</th>
+                <th>Register</th>
+                <th>Score</th>
+                <th>Fullscreen</th>
+                <th>Tab</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <tbody id="resultTable"></tbody>
+    </table>
+</div>
+
+<script>
+
+let adminToken = null;
+
+function adminLogin() {
+
+    fetch("https://adastra-proctor-1.onrender.com/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            username: document.getElementById("username").value,
+            password: document.getElementById("password").value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.token) {
+            adminToken = data.token;
+            document.getElementById("loginSection").style.display = "none";
+            document.getElementById("resultSection").style.display = "block";
+            loadResults();
+        } else {
+            alert(data.message);
+        }
+    });
+}
+
+function loadResults() {
+
+    fetch("https://adastra-proctor-1.onrender.com/admin/results", {
+        headers: {
+            "x-admin-token": adminToken
+        }
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        let html = "";
+
+        data.forEach(candidate => {
+
+            html += `
+            <tr>
+                <td>${candidate.name}</td>
+                <td>${candidate.registerNumber}</td>
+                <td>${candidate.score}</td>
+                <td>${candidate.fullscreenExits}</td>
+                <td>${candidate.tabSwitches}</td>
+                <td>
+                    <button class="btn btn-sm btn-primary"
+                        onclick='viewDetails(${JSON.stringify(candidate.answers)})'>
+                        View
+                    </button>
+                </td>
+            </tr>
+            `;
+        });
+
+        document.getElementById("resultTable").innerHTML = html;
+    });
+}
+
+function viewDetails(answers) {
+
+    let text = "";
+
+    answers.forEach((a, index) => {
+        text += `Q${index+1}: Selected ${a.selectedOption}, Correct ${a.correctOption} → ${a.isCorrect ? "Correct" : "Wrong"}\n`;
+    });
+
+    alert(text);
+}
+
+</script>
+
+</body>
+</html>
