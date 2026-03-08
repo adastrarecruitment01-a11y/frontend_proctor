@@ -117,7 +117,7 @@ input[type="radio"] {
 
 <div class="header">
     <h5>ROVER RECRUITMENT EXAM</h5>
-    <div class="timer" id="timer">40:00</div>
+    <div class="timer" id="timer">20:00</div>
 </div>
 
 <div class="container">
@@ -201,7 +201,7 @@ window.onbeforeunload = function () {
 let questions = [];
 let currentIndex = parseInt(localStorage.getItem("currentIndex")) || 0;
 let answers = JSON.parse(localStorage.getItem("answers")) || [];
-let timeLeft = parseInt(localStorage.getItem("timeLeft")) || (40 * 60);
+let timeLeft = parseInt(localStorage.getItem("timeLeft")) || (20 * 60);
 
 let timerInterval = setInterval(() => {
     timeLeft--;
@@ -398,7 +398,7 @@ function submitExam() {
 
     window.onbeforeunload = null;
 
-    fetch("https://soft-proctor-backend.onrender.com/submit-exam", {
+    fetch("https://adastra-proctor-1.onrender.com/submit-exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ candidateId, answers })
@@ -414,6 +414,7 @@ function submitExam() {
         submitBtn.innerText = "Submit";
     });
 }
+
 </script>
 
 </body>
